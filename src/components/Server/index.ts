@@ -61,12 +61,12 @@ class Server {
     return this.serverInstance;
   }
 
-  public start(port: string): void {
+  public start(port: number, host: string): void {
     if (this.isStarted) {
       return;
     }
 
-    this.server.listen(port);
+    this.server.listen(port, host);
     this.isStarted = true;
   }
 
