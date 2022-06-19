@@ -44,6 +44,22 @@
 
 > `npm run test` - start testing scenarios
 
+## TESTING
+
+> USE TEST AFTER SERVER STARTING
+>
+> Command `npm run test` starts all scenarios. Testing has 5 scenarios:
+>
+> 1. `CRUD` - _Test CRUD USERS API_
+>
+> 2. `GET` - _Test GET USER API_
+>
+> 3. `POST` - _Test POST USER API_
+>
+> 4. `PUT` - _Test PUT USER API_
+>
+> 5. `DELETE` -_Test DELETE USER API_
+
 ## API
 
 > #### GET
@@ -119,17 +135,3 @@
 > #### DELETE
 >
 > `users/[number]` - delete user
-
-## TESTING
-
-> Command `npm run start` starts all scenarios. Testing has 5 scenarios:
->
-> 1. `CRUD` - _Test CRUD USERS API_
->
-> 2. `GET` - _Test GET USER API_
->
-> 3. `POST` - _Test POST USER API_
->
-> 4. `PUT` - _Test PUT USER API_
->
-> 5. `DELETE` -_Test DELETE USER API_
