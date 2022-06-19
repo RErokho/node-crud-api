@@ -1,4 +1,5 @@
 import UserModel from "../../models/UserModel";
+import Database from "./index";
 
 /*
   Tables
@@ -7,10 +8,6 @@ import UserModel from "../../models/UserModel";
 export enum TableName {
   USERS = "USERS",
 }
-
-export type TDataGeneric<K extends TableName, V = TTableValue<K>> = {
-  [key in K]?: V;
-};
 
 export type TTableValue<T extends TableName> = T extends TableName.USERS
   ? TUsersTable
@@ -23,8 +20,6 @@ export type TTableOneValue<T extends TableName> = T extends TableName.USERS
 export type TTableValueAsArray<T extends TableName> = T extends TableName.USERS
   ? Array<TUserData>
   : never;
-
-export type TData = TDataGeneric<TableName>;
 
 export type TTableData = TUserData;
 
@@ -63,4 +58,51 @@ export type TPutData<T extends TableName> = T extends TableName.USERS
   Utils
  */
 
-export type TGetTable = <T extends TableName>(tableName: T) => TTableValue<T>;
+export type TGetTable = <T extends TableName>(
+  tableName: T
+) => Promise<TTableValue<T> | null>;
+
+export type TUpdateTable = <T extends TableName>(
+  tableName: T,
+  data: TTableValue<T>
+) => Promise<boolean>;
+
+/*
+  Database
+ */
+
+export interface IDatabase {
+  get: TGet;
+  post: TPost;
+  put: TPut;
+  delete: TDelete;
+}
+
+/*
+  Methods
+ */
+
+export type TGetDB = () => Database;
+
+export type TClearDB = () => void;
+
+export type TGet = <T extends TableName>(
+  tableName: T,
+  id?: number
+) => Promise<TTableValueAsArray<T> | TTableOneValue<T> | null>;
+
+export type TPost = <T extends TableName>(
+  tableName: T,
+  data: TPostData<T>
+) => Promise<TPostData<T>>;
+
+export type TPut = <T extends TableName>(
+  tableName: T,
+  id: number,
+  data: TPutData<T>
+) => Promise<TPutData<T> | null>;
+
+export type TDelete = <T extends TableName>(
+  tableName: T,
+  id: number
+) => Promise<boolean>;

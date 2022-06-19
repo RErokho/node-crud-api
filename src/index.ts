@@ -1,16 +1,16 @@
+import Cluster from "./components/Cluster";
 import Server from "./components/Server";
-import UsersRouter from "./routers/UsersRouter";
+
 import { API_URL } from "./constants";
+import config from "./configuration/default";
 
-import config from "./configuration/config";
+const server = new Server(API_URL);
 
-const { port, host } = config;
-const server = Server.getServer();
+/*
+  Clustering
+ */
 
-const userRouter = UsersRouter.getController();
+const { multi } = config;
 
-server.setBaseUrl(API_URL);
-
-userRouter.init(server);
-
-server.start(port, host);
+const cl = new Cluster(server, multi);
+cl.start();

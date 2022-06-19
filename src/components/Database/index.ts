@@ -1,80 +1,105 @@
-import { getTable } from "./utils";
+import { resolve } from "path";
+import { rm } from "fs/promises";
 
 import {
-  TableName,
-  TPostData,
-  TPutData,
+  IDatabase,
+  TClearDB,
+  TDelete,
+  TGet,
+  TGetDB,
+  TPost,
+  TPut,
   TTableOneValue,
   TTableValueAsArray,
 } from "./types";
+import { getTable, updateTable } from "./utils";
 
-class Database {
+class Database implements IDatabase {
   private static dbInstance: Database | null = null;
 
-  private constructor() {}
-
-  public static getDB() {
+  public static getDB: TGetDB = () => {
     if (this.dbInstance === null) {
       this.dbInstance = new Database();
     }
 
     return this.dbInstance;
-  }
+  };
 
-  async get<T extends TableName>(
-    tableName: T,
-    id?: number
-  ): Promise<TTableValueAsArray<T> | TTableOneValue<T> | null> {
-    return new Promise((resolve, reject) => {
+  public clearDB: TClearDB = async () => {
+    const pathToDir = resolve(__dirname, "tables");
+
+    try {
+      await rm(pathToDir, { recursive: true });
+    } catch {}
+  };
+
+  public get: TGet = async (tableName, id) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        const table = getTable(tableName);
+        const table = await getTable(tableName);
+        if (table === null) {
+          reject();
+
+          return;
+        }
 
         if (id === undefined) {
-          resolve(Object.values(table) as TTableValueAsArray<T>);
+          resolve(Object.values(table) as TTableValueAsArray<typeof tableName>);
 
           return;
         }
 
         const value = table[id];
-
         if (value === undefined) {
           resolve(null);
         }
 
-        resolve(value as TTableOneValue<T>);
+        resolve(value as TTableOneValue<typeof tableName>);
       } catch {
         reject();
       }
     });
-  }
+  };
 
-  async post<T extends TableName>(
-    tableName: T,
-    data: TPostData<T>
-  ): Promise<TPostData<T>> {
-    return new Promise((resolve, reject) => {
+  public post: TPost = async (tableName, data) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        const table = getTable(tableName);
+        const table = await getTable(tableName);
+
+        if (table === null) {
+          reject();
+
+          return;
+        }
 
         const recordCount = Object.keys(table).length;
 
         table[recordCount + 1] = data;
 
-        resolve(table[recordCount + 1] as TPostData<T>);
+        const isUpdated = await updateTable(tableName, table);
+
+        if (isUpdated) {
+          resolve(data);
+
+          return;
+        }
+        reject();
       } catch {
         reject();
       }
     });
-  }
+  };
 
-  async put<T extends TableName>(
-    tableName: T,
-    id: number,
-    data: TPutData<T>
-  ): Promise<TPutData<T> | null> {
-    return new Promise((resolve, reject) => {
+  public put: TPut = async (tableName, id, data) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        const table = getTable(tableName);
+        const table = await getTable(tableName);
+
+        if (table === null) {
+          reject();
+
+          return;
+        }
 
         const oldData = table[id];
 
@@ -86,20 +111,31 @@ class Database {
 
         table[id] = data;
 
-        resolve(table[id] as TPutData<T>);
+        const isUpdated = await updateTable(tableName, table);
+
+        if (isUpdated) {
+          resolve(data);
+
+          return;
+        }
+
+        reject();
       } catch {
         reject();
       }
     });
-  }
+  };
 
-  async delete<T extends TableName>(
-    tableName: T,
-    id: number
-  ): Promise<boolean> {
-    return new Promise((resolve, reject) => {
+  public delete: TDelete = async (tableName, id) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        const table = getTable(tableName);
+        const table = await getTable(tableName);
+
+        if (table === null) {
+          reject();
+
+          return;
+        }
 
         const data = table[id];
 
@@ -111,12 +147,20 @@ class Database {
 
         delete table[id];
 
-        resolve(true);
+        const isUpdated = await updateTable(tableName, table);
+
+        if (isUpdated) {
+          resolve(true);
+
+          return;
+        }
+
+        reject();
       } catch {
         reject();
       }
     });
-  }
+  };
 }
 
 export default Database;

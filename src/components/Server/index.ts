@@ -1,16 +1,44 @@
-import { createServer, Server as THttpServer } from "http";
+import { Server as THttpServer, createServer } from "http";
 
-import { createReg, trimSlash } from "./utils";
-import { Method, TMethodRouteTable, TRouteHandler, TRouteTable } from "./types";
-
+import Router from "../../routers";
+import Balancer from "../Balancer";
+import Log from "../Log";
 import ResponseCreator from "../ResponseCreator";
+import {
+  Method,
+  TDelete,
+  TGet,
+  TListenServer,
+  TMethodHandler,
+  TMethodHandlerList,
+  TMethodRouteTable,
+  TPost,
+  TPut,
+  TRouteHandler,
+  TRouteTable,
+  TSetBalancer,
+  TSetRoutes,
+  TListen,
+} from "./types";
+import { createReg, trimSlash } from "./utils";
+import cluster from "cluster";
 
-const rc = ResponseCreator.getRC();
+const log = Log.getLog();
+
+const methodHandlerList: TMethodHandlerList = {
+  [Method.GET]: "get",
+  [Method.POST]: "post",
+  [Method.PUT]: "put",
+  [Method.DELETE]: "delete",
+};
 
 class Server {
-  private static serverInstance: Server | null = null;
+  private readonly rc: ResponseCreator;
+  private readonly baseUrl: string;
 
-  private server: THttpServer;
+  private readonly server: THttpServer;
+  private balancer: Balancer | null = null;
+
   private isStarted: boolean = false;
   private routeTable: TRouteTable = {
     [Method.GET]: [],
@@ -18,89 +46,110 @@ class Server {
     [Method.PUT]: [],
     [Method.DELETE]: [],
   };
-  private baseUrl: string = "";
 
-  private constructor() {
-    this.server = createServer((response, request) => {
-      const { method, url } = response;
+  public constructor(baseUrl: string) {
+    this.rc = new ResponseCreator();
+    this.server = createServer(this.listenServer);
+    this.baseUrl = baseUrl;
 
-      if (method === undefined || url === undefined) {
-        rc.status404(request, "Endpoint Not Found");
-
-        return;
-      }
-
-      const trimmedUrl = trimSlash(url);
-
-      const routeTable: TMethodRouteTable = this.routeTable[method as Method];
-
-      const route = routeTable.find(([reg, _handler]) => reg.test(trimmedUrl));
-
-      if (route === undefined) {
-        rc.status404(request, "Endpoint Not Found");
-
-        return;
-      }
-
-      const handler: TRouteHandler = route[1];
-      const routeData = route[0].exec(trimmedUrl);
-
-      handler(
-        response,
-        request,
-        (routeData === null ? null : routeData[1]) || null
-      );
-    });
+    const router = new Router();
+    const routes = router.getRoutes();
+    this.setRoutes(routes);
   }
 
-  public static getServer(): Server {
-    if (this.serverInstance === null) {
-      this.serverInstance = new Server();
+  private listenServer: TListenServer = (response, request) => {
+    const { method, url } = response;
+
+    if (this.balancer !== null && this.balancer.getClusterNum() !== 0) {
+      this.balancer.handle(response, request);
+
+      return;
     }
 
-    return this.serverInstance;
-  }
+    if (method === undefined || url === undefined) {
+      this.rc.status404(request, "Endpoint Not Found");
 
-  public start(port: number, host: string): void {
+      return;
+    }
+
+    const trimmedUrl = trimSlash(url);
+
+    const handlerName: string = cluster.isPrimary ? "Server" : "Cluster";
+
+    // LOGGING
+    const pid = process.pid;
+    log.text(
+      `SERVER: Request for ${handlerName} #${pid} METHOD: "${method}"; API: "${trimmedUrl}">>`
+    );
+
+    const routeTable: TMethodRouteTable = this.routeTable[method as Method];
+
+    const route = routeTable.find(([reg, _handler]) => reg.test(trimmedUrl));
+
+    if (route === undefined) {
+      this.rc.status404(request, "Endpoint Not Found");
+
+      return;
+    }
+
+    const handler: TRouteHandler = route[1];
+    const routeData = route[0].exec(trimmedUrl);
+
+    handler(
+      response,
+      request,
+      (routeData === null ? null : routeData[1]) || null
+    );
+  };
+
+  private setRoutes: TSetRoutes = (routes) => {
+    routes.forEach(([method, url, handler]) => {
+      const methodHandler = this[methodHandlerList[method]] as TMethodHandler;
+
+      methodHandler(url, handler);
+    });
+  };
+
+  public listen: TListen = (port, host, cb) => {
     if (this.isStarted) {
       return;
     }
 
-    this.server.listen(port, host);
+    this.server.listen(port, host, cb);
     this.isStarted = true;
-  }
+  };
 
-  public setBaseUrl(baseUrl: string): void {
-    this.baseUrl = trimSlash(baseUrl);
-  }
+  public setBalancer: TSetBalancer = (balancer) => {
+    this.balancer = balancer;
+  };
 
-  public get(route: string, handler: TRouteHandler): void {
+  public get: TGet = (route, handler) => {
     const trimmed: string = trimSlash(route);
     const routeUrl = `${this.baseUrl}/${trimmed}`;
 
     this.routeTable[Method.GET].push([createReg(routeUrl), handler]);
-  }
+  };
 
-  public post(route: string, handler: TRouteHandler): void {
+  public post: TPost = (route, handler) => {
     const trimmedRoute = trimSlash(route);
     const routeUrl = `${this.baseUrl}/${trimmedRoute}`;
 
     this.routeTable[Method.POST].push([createReg(routeUrl), handler]);
-  }
+  };
 
-  public put(route: string, handler: TRouteHandler): void {
+  public put: TPut = (route, handler) => {
     const trimmedRoute = trimSlash(route);
     const routeUrl = `${this.baseUrl}/${trimmedRoute}`;
 
     this.routeTable[Method.PUT].push([createReg(routeUrl), handler]);
-  }
+  };
 
-  public delete(route: string, handler: TRouteHandler): void {
+  public delete: TDelete = (route, handler) => {
     const trimmedRoute = trimSlash(route);
     const routeUrl = `${this.baseUrl}/${trimmedRoute}`;
 
     this.routeTable[Method.DELETE].push([createReg(routeUrl), handler]);
-  }
+  };
 }
 
 export default Server;

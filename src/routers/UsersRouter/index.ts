@@ -1,35 +1,26 @@
-import Server from "../../components/Server";
-
+import { Method } from "../../components/Server/types";
 import UsersController from "../../controllers/UsersController";
+import { TRouteList } from "../types";
+import { IUserRouter, TGetRoutes } from "./types";
 
-const usersController = UsersController.getController();
+class UsersRouter implements IUserRouter {
+  private userController: UsersController;
 
-class UsersRouter {
-  private static routerInstance: UsersRouter | null = null;
+  private readonly routes: TRouteList;
 
-  private isInit: boolean = false;
+  public constructor() {
+    this.userController = new UsersController();
 
-  private constructor() {}
-
-  public static getController(): UsersRouter {
-    if (this.routerInstance === null) {
-      this.routerInstance = new UsersRouter();
-    }
-
-    return this.routerInstance;
+    this.routes = [
+      [Method.GET, "users", this.userController.getAllUsers],
+      [Method.GET, "users/*", this.userController.getUser],
+      [Method.POST, "users", this.userController.createUser],
+      [Method.PUT, "users/*", this.userController.updateUser],
+      [Method.DELETE, "users/*", this.userController.deleteUser],
+    ];
   }
 
-  public init(server: Server): void {
-    if (this.isInit) {
-      return;
-    }
-
-    server.get("users", usersController.getAllUsers);
-    server.get("users/*", usersController.getUser);
-    server.post("users", usersController.createUser);
-    server.put("users/*", usersController.updateUser);
-    server.delete("users/*", usersController.deleteUser);
-  }
+  public getRoutes: TGetRoutes = () => this.routes;
 }
 
 export default UsersRouter;

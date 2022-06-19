@@ -1,8 +1,6 @@
-import { IncomingMessage } from "http";
-
 import { TGetReqData } from "./types";
 
-export const getReqData: TGetReqData = (request: IncomingMessage) => {
+export const getReqData: TGetReqData = (request) => {
   return new Promise((response, reject) => {
     try {
       let body = "";
@@ -12,12 +10,15 @@ export const getReqData: TGetReqData = (request: IncomingMessage) => {
       });
 
       request.on("end", () => {
-        const json = JSON.parse(body.toString());
-
-        response(json);
+        try {
+          const json = JSON.parse(body.toString());
+          response(json);
+        } catch {
+          reject();
+        }
       });
     } catch (error) {
-      reject(null);
+      response(null);
     }
   });
 };

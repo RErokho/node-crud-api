@@ -1,54 +1,35 @@
-import { Color } from "./types";
+import { Color, ILog, TClear, TGetLog, TLog, TWrite } from "./types";
 
-class Log {
+class Log implements ILog {
   private static logInstance: Log | null = null;
 
-  private constructor() {}
-
-  public static getLog() {
+  public static getLog: TGetLog = () => {
     if (this.logInstance === null) {
       this.logInstance = new Log();
     }
 
     return this.logInstance;
-  }
+  };
 
-  private write(
-    color: Color,
-    msg: string,
-    newLine: number = 1,
-    space: number = 0
-  ) {
+  private write: TWrite = (color, msg, newLine = 1, space = 0) => {
     const { stdout } = process;
 
     stdout.write(
-      `${" ".repeat(space)}${color}${msg}${color}${"\n".repeat(newLine)}`
+      `${" ".repeat(space)}${color}${msg}${color}${"\n".repeat(newLine)}`,
     );
-  }
+  };
 
-  public message(msg: string, newLine: number = 1, space: number = 0) {
-    this.write(Color.BLUE, msg, newLine, space);
-  }
+  public message: TLog = (...args) => this.write(Color.BLUE, ...args);
 
-  public warning(msg: string, newLine: number = 1, space: number = 0) {
-    this.write(Color.YELLOW, msg, newLine, space);
-  }
+  public warning: TLog = (...args) => this.write(Color.YELLOW, ...args);
 
-  public error(msg: string, newLine: number = 1, space: number = 0) {
-    this.write(Color.RED, msg, newLine, space);
-  }
+  public error: TLog = (...args) => this.write(Color.RED, ...args);
 
-  public success(msg: string, newLine: number = 1, space: number = 0) {
-    this.write(Color.GREEN, msg, newLine, space);
-  }
+  public success: TLog = (...args) => this.write(Color.GREEN, ...args);
 
-  public text(msg: string, newLine: number = 1, space: number = 0) {
-    this.write(Color.CYAN, msg, newLine, space);
-  }
+  public text: TLog = (...args) => this.write(Color.CYAN, ...args);
 
-  clear() {
-    console.clear();
-  }
+  public clear: TClear = () => console.clear();
 }
 
 export default Log;

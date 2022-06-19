@@ -1,7 +1,8 @@
-import { TUserData } from "./types";
 import { v4 as generateId } from "uuid";
 
-class UserModel {
+import { IUserModel, TCreate, TUserData } from "./types";
+
+class UserModel implements IUserModel {
   public id: string;
   public username: string;
   public age: number;
@@ -14,7 +15,7 @@ class UserModel {
     this.hobbies = hobbies;
   }
 
-  public static create(data: {}): UserModel | null {
+  public static create: TCreate = (data) => {
     if (typeof data !== "object") {
       return null;
     }
@@ -31,7 +32,7 @@ class UserModel {
     }
 
     return new UserModel(username, age, hobbies);
-  }
+  };
 }
 
 export default UserModel;
