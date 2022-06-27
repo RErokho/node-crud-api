@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "lib": ["esNext"],
+    "target": "esNext",
+    "moduleResolution": "node",
+    "module": "commonJs",
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    //    "isolatedModules": true,
+
+    "noEmit": false,
+
+    "strict": true,
+
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+
+    "alwaysStrict": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+
+    "outDir": "dist"
+  },
+  "ts-node": {
+    "esm": true
+  }
+}
